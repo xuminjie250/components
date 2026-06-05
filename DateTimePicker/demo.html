@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DateTimePicker 日期时间选择器 - 演示</title>
+    <link rel="stylesheet" href="DateTimePicker.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+        .card h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1890ff;
+        }
+        .demo-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .demo-row label {
+            min-width: 100px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        .demo-row .dtp-wrapper {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+        }
+        .result-box {
+            margin-top: 15px;
+            padding: 12px 16px;
+            background: #f0f5ff;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            border-left: 4px solid #1890ff;
+        }
+        .result-box code {
+            background: #e6f7ff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            color: #1890ff;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            background: #fff;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        .btn.primary {
+            background: #1890ff;
+            color: #fff;
+            border-color: #1890ff;
+        }
+        .btn.primary:hover {
+            background: #40a9ff;
+        }
+        .btn.danger {
+            background: #fff;
+            color: #ff4d4f;
+            border-color: #ff4d4f;
+        }
+        .btn.danger:hover {
+            background: #ff4d4f;
+            color: #fff;
+        }
+        .code-block {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        .code-block .tag   { color: #f38ba8; }
+        .code-block .attr  { color: #89b4fa; }
+        .code-block .str   { color: #a6e3a1; }
+        .code-block .fn    { color: #89dceb; }
+        .code-block .cmt   { color: #6c7086; font-style: italic; }
+        .code-block .kw    { color: #cba6f7; }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-group select {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .input-group select:focus {
+            border-color: #1890ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 DateTimePicker</h1>
+            <p>自定义日期时间选择器 — 独立可复用模块 v1.0.0</p>
+        </div>
+
+        <!-- 基本使用 -->
+        <div class="card">
+            <h2>一、基本使用</h2>
+            <div class="demo-row">
+                <label>选择时间：</label>
+                <input type="datetime-local" id="demo1" style="display:none;">
+            </div>
+            <div class="result-box">
+                当前值：<code id="result1">—</code>
+            </div>
+        </div>
+
+        <!-- 带初始值 -->
+        <div class="card">
+            <h2>二、带初始值</h2>
+            <div class="demo-row">
+                <label>事故时间：</label>
+                <input type="datetime-local" id="demo2" value="2025-06-15T09:30" style="display:none;">
+            </div>
+            <div class="result-box">
+                当前值：<code id="result2">—</code>
+            </div>
+        </div>
+
+        <!-- 自定义选项 -->
+        <div class="card">
+            <h2>三、自定义选项（分钟步长=5，自定义placeholder）</h2>
+            <div class="demo-row">
+                <label>预约时间：</label>
+                <input type="datetime-local" id="demo3" style="display:none;">
+            </div>
+            <div class="result-box">
+                当前值：<code id="result3">—</code>
+            </div>
+        </div>
+
+        <!-- 编程API -->
+        <div class="card">
+            <h2>四、编程 API 操作</h2>
+            <div class="demo-row">
+                <label>操作目标：</label>
+                <input type="datetime-local" id="demo4" style="display:none;">
+            </div>
+            <div class="result-box">
+                当前值：<code id="result4">—</code>
+            </div>
+            <div class="btn-group">
+                <button class="btn primary" onclick="apiSetNow()">setValue(当前时间)</button>
+                <button class="btn" onclick="apiGet()">getValue()</button>
+                <button class="btn" onclick="apiClear()">clear()</button>
+                <button class="btn" onclick="apiOpen()">open() 编程打开</button>
+                <button class="btn danger" onclick="apiDestroy()">destroy() 销毁</button>
+            </div>
+        </div>
+
+        <!-- 多实例 -->
+        <div class="card">
+            <h2>五、多实例同时使用</h2>
+            <div class="demo-row">
+                <label>开始时间：</label>
+                <input type="datetime-local" id="demo5-start" style="display:none;">
+            </div>
+            <div class="demo-row">
+                <label>结束时间：</label>
+                <input type="datetime-local" id="demo5-end" style="display:none;">
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="card">
+            <h2>📖 使用说明</h2>
+
+            <h3 style="margin-top:16px;margin-bottom:8px;color:#555;">引入文件</h3>
+            <div class="code-block">
+<span class="cmt">&lt;!-- 1. 引入样式 --&gt;</span>
+&lt;<span class="tag">link</span> <span class="attr">rel</span>=<span class="str">"stylesheet"</span> <span class="attr">href</span>=<span class="str">"DateTimePicker.css"</span>&gt;
+
+<span class="cmt">&lt;!-- 2. 引入脚本 --&gt;</span>
+&lt;<span class="tag">script</span> <span class="attr">src</span>=<span class="str">"DateTimePicker.js"</span>&gt;&lt;/<span class="tag">script</span>&gt;
+            </div>
+
+            <h3 style="margin-top:16px;margin-bottom:8px;color:#555;">HTML 结构</h3>
+            <div class="code-block">
+<span class="cmt">&lt;!-- 只需一个普通的 input --&gt;</span>
+&lt;<span class="tag">input</span> <span class="attr">type</span>=<span class="str">"datetime-local"</span> <span class="attr">id</span>=<span class="str">"myPicker"</span>&gt;
+            </div>
+
+            <h3 style="margin-top:16px;margin-bottom:8px;color:#555;">方式一：手动实例化</h3>
+            <div class="code-block">
+<span class="kw">var</span> picker = <span class="kw">new</span> <span class="fn">DateTimePicker</span>(<span class="str">'#myPicker'</span>, {
+    format: <span class="str">'YYYY-MM-DD HH:mm'</span>,      <span class="cmt">// 显示格式</span>
+    placeholder: <span class="str">'请选择日期时间'</span>,       <span class="cmt">// 占位文字</span>
+    minuteStep: <span class="str">5</span>,                     <span class="cmt">// 分钟步长 (1/5/10/15/30)</span>
+    onChange: <span class="kw">function</span>(value, instance) {  <span class="cmt">// 值变更回调</span>
+        <span class="fn">console</span>.log(value);
+    }
+});
+            </div>
+
+            <h3 style="margin-top:16px;margin-bottom:8px;color:#555;">方式二：批量自动初始化</h3>
+            <div class="code-block">
+<span class="cmt">// 自动扫描页面中所有 input[type="datetime-local"] 并初始化</span>
+<span class="kw">var</span> pickers = <span class="fn">DateTimePicker.initAll</span>();
+            </div>
+
+            <h3 style="margin-top:16px;margin-bottom:8px;color:#555;">公开 API</h3>
+            <div class="code-block">
+picker.<span class="fn">getValue</span>()          <span class="cmt">// 获取格式化字符串 "2025-06-15 09:30"</span>
+picker.<span class="fn">getDate</span>()           <span class="cmt">// 获取 Date 对象</span>
+picker.<span class="fn">setValue</span>(val)       <span class="cmt">// 设置值 (支持字符串/Date/时间戳)</span>
+picker.<span class="fn">setDate</span>(date)       <span class="cmt">// 设置 Date 对象 (链式调用)</span>
+picker.<span class="fn">clear</span>()             <span class="cmt">// 清空 (链式调用)</span>
+picker.<span class="fn">open</span>()              <span class="cmt">// 编程打开面板 (链式调用)</span>
+picker.<span class="fn">close</span>()             <span class="cmt">// 关闭面板 (链式调用)</span>
+picker.<span class="fn">getElement</span>()        <span class="cmt">// 获取原始 input 元素</span>
+picker.<span class="fn">getWrapper</span>()        <span class="cmt">// 获取最外层包裹元素</span>
+picker.<span class="fn">destroy</span>()           <span class="cmt">// 销毁实例，还原原始 input</span>
+            </div>
+
+            <h3 style="margin-top:16px;margin-bottom:8px;color:#555;">交互说明</h3>
+            <div class="code-block">
+<span class="cmt">// 支持以下交互方式：</span>
+<span class="cmt">// 1. 点击输入框 → 弹出日期时间选择面板</span>
+<span class="cmt">// 2. 点击日期区域 → 弹出日历面板 (支持日/月/年三级切换)</span>
+<span class="cmt">// 3. 点击时/分数值 → 弹出滚动选择列表</span>
+<span class="cmt">// 4. 双击时/分数值 → 进入键盘直接编辑模式</span>
+<span class="cmt">// 5. 点击"今天" → 快速跳转到今天</span>
+<span class="cmt">// 6. 点击"清除" → 清空已选日期</span>
+<span class="cmt">// 7. 点击面板外部 → 自动关闭</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="DateTimePicker.js"></script>
+    <script>
+        /* ===== 示例1: 基本使用 ===== */
+        var picker1 = new DateTimePicker('#demo1', {
+            onChange: function(val) {
+                document.getElementById('result1').textContent = val || '—';
+            }
+        });
+
+        /* ===== 示例2: 带初始值 ===== */
+        var picker2 = new DateTimePicker('#demo2', {
+            onChange: function(val) {
+                document.getElementById('result2').textContent = val || '—';
+            }
+        });
+        document.getElementById('result2').textContent = picker2.getValue();
+
+        /* ===== 示例3: 自定义选项 ===== */
+        var picker3 = new DateTimePicker('#demo3', {
+            format: 'YYYY-MM-DD HH:mm',
+            placeholder: '请选择预约时间...',
+            minuteStep: 5,
+            onChange: function(val) {
+                document.getElementById('result3').textContent = val || '—';
+            }
+        });
+
+        /* ===== 示例4: API操作 ===== */
+        var picker4 = new DateTimePicker('#demo4', {
+            onChange: function(val) {
+                document.getElementById('result4').textContent = val || '—';
+            }
+        });
+
+        function apiSetNow() {
+            picker4.setValue(new Date());
+            document.getElementById('result4').textContent = picker4.getValue();
+        }
+        function apiGet() {
+            var val = picker4.getValue();
+            alert(val ? '当前值: ' + val : '未选择');
+        }
+        function apiClear() {
+            picker4.clear();
+            document.getElementById('result4').textContent = '—';
+        }
+        function apiOpen() {
+            picker4.open();
+        }
+        function apiDestroy() {
+            picker4.destroy();
+            alert('已销毁，原始 input 已还原');
+        }
+
+        /* ===== 示例5: 多实例 ===== */
+        var picker5Start = new DateTimePicker('#demo5-start', {
+            placeholder: '开始时间',
+            onChange: function(val, inst) {
+                console.log('开始时间:', val);
+            }
+        });
+        var picker5End = new DateTimePicker('#demo5-end', {
+            placeholder: '结束时间',
+            onChange: function(val, inst) {
+                console.log('结束时间:', val);
+            }
+        });
+    </script>
+</body>
+</html>
