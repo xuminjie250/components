@@ -1,5 +1,5 @@
 ================================================================================
-  DateTimePicker v1.2.0 — 自定义日期时间选择器 使用说明
+  DateTimePicker v1.3.0 — 自定义日期时间选择器 使用说明
 ================================================================================
 
 一、简介
@@ -38,10 +38,13 @@
   创建实例时可以传入第二个参数 options，所有配置项如下：
 
     new DateTimePicker('#myPicker', {
-        format:      'YYYY-MM-DD HH:mm',    // 显示格式，支持 YYYY MM DD HH mm
+        format:      'YYYY-MM-DD HH:mm',    // 显示格式，支持 YYYY MM DD HH mm ss
         placeholder: '请选择日期时间',        // 未选择时的占位提示文字
         minuteStep:  5,                     // 分钟选择步长：1 / 5 / 10 / 15 / 30
         zIndex:      1003,                  // 面板层级
+        disabled:    false,                 // 是否禁用
+        minDate:     null,                  // 最小可选日期 (string | Date | timestamp)
+        maxDate:     null,                  // 最大可选日期 (string | Date | timestamp)
 
         // 值变更回调
         onChange: function(value, instance) {
@@ -119,7 +122,7 @@
 
   静态方法：
 
-    DateTimePicker.version         版本号，当前 "1.2.0"
+    DateTimePicker.version         版本号，当前 "1.3.0"
 
     DateTimePicker.initAll(options) 批量初始化页面中所有
                                    input[type="datetime-local"] 元素，
@@ -169,7 +172,29 @@
     <input type="datetime-local" ref={inputRef} onChange={handleChange}>
 
 
-八、注意事项
+八、新增功能（v1.3.0）
+--------------------------------------------------------------------------------
+
+  (1) 禁用状态：
+      new DateTimePicker('#myPicker', { disabled: true });
+      输入框变为灰色，不可点击，不可交互。
+
+  (2) 日期范围限制：
+      new DateTimePicker('#myPicker', {
+          minDate: '2025-01-01',        // 不可早于 2025-01-01
+          maxDate: '2025-12-31'         // 不可晚于 2025-12-31
+      });
+      日历中超出范围的日期会变灰且不可选。
+
+  (3) 格式化支持秒（ss）：
+      new DateTimePicker('#myPicker', { format: 'YYYY-MM-DD HH:mm:ss' });
+
+  (4) 无障碍支持：
+      组件自动添加 ARIA 标签（role="combobox"、aria-expanded 等），
+      提升屏幕阅读器兼容性。
+
+
+九、注意事项
 --------------------------------------------------------------------------------
 
   1. 必须先引入 DateTimePicker.css，再引入 DateTimePicker.js
