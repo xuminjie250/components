@@ -1,9 +1,9 @@
 /*! ==============================================
-   DateTimePicker v1.2.0
+   DateTimePicker v1.3.0
    自定义日期时间选择器 - 独立可复用模块
    依赖: DateTimePicker.css (样式)
    兼容: IE11+ / Chrome / Firefox / Safari / Edge
-   新增: i18n国际化 | ES Module导出 | 内存泄漏修复 | 日历滚轮切换
+   新增: i18n国际化 | ES Module导出 | 内存泄漏修复 | 日历滚轮切换 | minDate/maxDate | disabled | ARIA
    ============================================== */
 
 (function (global, factory) {
@@ -46,11 +46,24 @@
         format: 'YYYY-MM-DD HH:mm',
         placeholder: DEFAULT_LOCALE.placeholder,
         minuteStep: 1,
-        zIndex: 1003
+        zIndex: 1003,
+        disabled: false,
+        minDate: null,
+        maxDate: null
     };
 
     function pad(n) {
         return n < 10 ? '0' + n : '' + n;
+    }
+
+    function isInvalidDate(d) {
+        return !d || isNaN(d.getTime());
+    }
+
+    function parseDate(val) {
+        if (!val) return null;
+        var d = new Date(val);
+        return isInvalidDate(d) ? null : d;
     }
 
     function formatDateTime(dateObj, fmt) {
@@ -60,12 +73,14 @@
         var d = pad(dateObj.getDate());
         var h = pad(dateObj.getHours());
         var m = pad(dateObj.getMinutes());
+        var s = pad(dateObj.getSeconds());
         return fmt
             .replace('YYYY', y)
             .replace('MM', M)
             .replace('DD', d)
             .replace('HH', h)
-            .replace('mm', m);
+            .replace('mm', m)
+            .replace('ss', s);
     }
 
     function DateTimePicker(selectorOrEl, options) {
@@ -85,6 +100,8 @@
         this._calendarMonth = null;
         this._calendarMode = 'day';
         this._timeMenuOpen = null;
+        this._minDate = parseDate(this._options.minDate);
+        this._maxDate = parseDate(this._options.maxDate);
 
         this._initDom(selectorOrEl);
         this._bindEvents();
@@ -132,8 +149,17 @@
 
             var customInput = document.createElement('div');
             customInput.className = 'dtp-input dtp-placeholder';
-            customInput.tabIndex = 0;
+            customInput.tabIndex = self._options.disabled ? -1 : 0;
             customInput.textContent = self._options.placeholder || locale.placeholder;
+            customInput.setAttribute('role', 'combobox');
+            customInput.setAttribute('aria-haspopup', 'dialog');
+            customInput.setAttribute('aria-expanded', 'false');
+            customInput.setAttribute('aria-label', self._options.placeholder || locale.placeholder);
+
+            if (self._options.disabled) {
+                wrapper.classList.add('dtp-disabled');
+                customInput.setAttribute('aria-disabled', 'true');
+            }
 
             nativeInput.type = nativeInput.type || 'datetime-local';
             nativeInput.className = nativeInput.className + ' dtp-native-input';
@@ -251,6 +277,7 @@
 
             this._customInput.addEventListener('click', function (e) {
                 e.stopPropagation();
+                if (self._isDisabled()) return;
                 _lastFocusedPicker = self;
                 self._toggleDropDown();
             });
@@ -267,28 +294,33 @@
 
             this._dateInput.addEventListener('click', function (e) {
                 e.stopPropagation();
+                if (self._isDisabled()) return;
                 self._showCalendar();
             });
 
             this._hourValue.addEventListener('click', function (e) {
                 e.stopPropagation();
+                if (self._isDisabled()) return;
                 _lastFocusedPicker = self;
                 self._toggleTimeScroll('hour');
             });
 
             this._minuteValue.addEventListener('click', function (e) {
                 e.stopPropagation();
+                if (self._isDisabled()) return;
                 _lastFocusedPicker = self;
                 self._toggleTimeScroll('minute');
             });
 
             this._hourValue.addEventListener('dblclick', function (e) {
                 e.stopPropagation();
+                if (self._isDisabled()) return;
                 self._startTimeEdit('hour');
             });
 
             this._minuteValue.addEventListener('dblclick', function (e) {
                 e.stopPropagation();
+                if (self._isDisabled()) return;
                 self._startTimeEdit('minute');
             });
 
@@ -308,16 +340,16 @@
             }
             _listenerRefCount = 1;
             _bodyClickHandler = function (e) {
-                var activeId = (_lastFocusedPicker && _lastFocusedPicker._id) || 0;
-                if (!activeId || !_instances[activeId]) return;
-                var inst = _instances[activeId];
                 var target = e.target;
-                var inWrapper = inst._wrapper.contains(target);
-                var inCalendar = inst._calendarPanel.contains(target);
-                var inTimeScroll = (inst._hourScroll.contains(target) || inst._minuteScroll.contains(target));
-
-                if (!inWrapper && !inCalendar && !inTimeScroll) {
-                    inst._closeAll();
+                for (var id in _instances) {
+                    if (!_instances.hasOwnProperty(id)) continue;
+                    var inst = _instances[id];
+                    var inWrapper = inst._wrapper.contains(target);
+                    var inCalendar = inst._calendarPanel.contains(target);
+                    var inTimeScroll = (inst._hourScroll.contains(target) || inst._minuteScroll.contains(target));
+                    if (!inWrapper && !inCalendar && !inTimeScroll) {
+                        inst._closeAll();
+                    }
                 }
             };
             document.addEventListener('click', _bodyClickHandler);
@@ -344,6 +376,7 @@
         _openDropDown: function () {
             var panel = this._panel;
             panel.classList.add('dtp-open');
+            this._customInput.setAttribute('aria-expanded', 'true');
             this._positionPanel(panel);
             this._initTempDate();
             this._buildHourScroll();
@@ -354,34 +387,58 @@
         _closeAll: function () {
             this._panel.classList.remove('dtp-open');
             this._calendarPanel.classList.remove('dtp-open');
+            this._customInput.setAttribute('aria-expanded', 'false');
             this._closeTimeScrolls();
             this._timeMenuOpen = null;
             this._calendarMode = 'day';
         },
 
         _positionPanel: function (panel) {
+            this._smartPosition(panel, 160, 'dtp-panel--fixed');
+        },
+
+        _smartPosition: function (el, defaultHeight, fixedClass) {
             var rect = this._wrapper.getBoundingClientRect();
-            var panelHeight = panel.offsetHeight || 160;
+            var elHeight = el.offsetHeight || defaultHeight;
             var spaceBelow = window.innerHeight - rect.bottom;
             var spaceAbove = rect.top;
 
-            panel.classList.remove('dtp-panel--fixed');
+            el.classList.remove(fixedClass);
 
-            if (spaceBelow < panelHeight + 10 && spaceAbove > panelHeight + 10) {
-                panel.style.top = 'auto';
-                panel.style.bottom = (rect.height + 4) + 'px';
-            } else if (spaceBelow < panelHeight + 10 && spaceAbove <= panelHeight + 10) {
-                panel.classList.add('dtp-panel--fixed');
-                panel.style.top = '50%';
-                panel.style.left = '50%';
-                panel.style.transform = 'translate(-50%, -50%)';
-                panel.style.bottom = 'auto';
+            if (spaceBelow < elHeight + 10 && spaceAbove > elHeight + 10) {
+                el.style.top = 'auto';
+                el.style.bottom = (rect.height + 4) + 'px';
+                el.style.left = '';
+                el.style.transform = '';
+            } else if (spaceBelow < elHeight + 10 && spaceAbove <= elHeight + 10) {
+                el.classList.add(fixedClass);
+                el.style.top = '50%';
+                el.style.left = '50%';
+                el.style.transform = 'translate(-50%, -50%)';
+                el.style.bottom = 'auto';
             } else {
-                panel.style.top = '100%';
-                panel.style.bottom = 'auto';
-                panel.style.transform = '';
-                panel.style.left = '';
+                el.style.top = '100%';
+                el.style.bottom = 'auto';
+                el.style.transform = '';
+                el.style.left = '';
             }
+        },
+
+        _isDisabled: function () {
+            return this._options.disabled;
+        },
+
+        _isDateInRange: function (d) {
+            if (!d) return false;
+            if (this._minDate) {
+                var minStart = new Date(this._minDate.getFullYear(), this._minDate.getMonth(), this._minDate.getDate());
+                if (d < minStart) return false;
+            }
+            if (this._maxDate) {
+                var maxEnd = new Date(this._maxDate.getFullYear(), this._maxDate.getMonth(), this._maxDate.getDate(), 23, 59, 59, 999);
+                if (d > maxEnd) return false;
+            }
+            return true;
         },
 
         /* ========== 值管理 ========== */
@@ -438,7 +495,7 @@
         },
 
         _cancel: function () {
-            this._setValue(this._value ? formatDateTime(this._value, this._options.format) : '');
+            this._setValue(this._value ? this._value : '');
             this._closeAll();
         },
 
@@ -479,32 +536,11 @@
         },
 
         _positionTimeScroll: function (scroll) {
-            var parent = scroll.parentElement;
-            var parentRect = parent.getBoundingClientRect();
-            var scrollHeight = 160;
-            var spaceBelow = window.innerHeight - parentRect.bottom;
-            var spaceAbove = parentRect.top;
-
-            scroll.classList.remove('dtp-time-scroll--fixed');
-
-            if (spaceBelow < scrollHeight + 10 && spaceAbove > scrollHeight + 10) {
-                scroll.style.top = 'auto';
-                scroll.style.bottom = '100%';
-            } else if (spaceBelow < scrollHeight + 10 && spaceAbove <= scrollHeight + 10) {
-                scroll.classList.add('dtp-time-scroll--fixed');
-                scroll.style.top = '50%';
-                scroll.style.left = '50%';
-                scroll.style.transform = 'translate(-50%, -50%)';
-                scroll.style.bottom = 'auto';
-            } else {
-                scroll.style.top = '100%';
-                scroll.style.bottom = 'auto';
-                scroll.style.transform = '';
-                scroll.style.left = '';
-            }
+            this._smartPosition(scroll, 160, 'dtp-time-scroll--fixed');
         },
 
         _buildTimeScroll: function (type) {
+            var self = this;
             var scroll = type === 'hour' ? this._hourScroll : this._minuteScroll;
             var max = type === 'hour' ? 24 : 60;
             var step = type === 'hour' ? 1 : this._options.minuteStep || 1;
@@ -514,25 +550,28 @@
                 ? parseInt(this._hourValue.textContent) || 0
                 : parseInt(this._minuteValue.textContent) || 0;
 
+            var nearest = Math.round(selected / step) * step;
+            if (nearest >= max) nearest = max - step;
+
             for (var i = 0; i < max; i += step) {
                 var opt = document.createElement('div');
                 opt.className = 'dtp-time-option';
                 var label = pad(i);
                 opt.textContent = label;
-                if (i === selected) {
+                if (i === nearest) {
                     opt.classList.add('dtp-time-option--selected');
                 }
-                (function (val, el) {
-                    el.addEventListener('click', function (e) {
+                opt.addEventListener('click', (function (val) {
+                    return function (e) {
                         e.stopPropagation();
                         if (type === 'hour') {
-                            this._setHour(val);
+                            self._setHour(val);
                         } else {
-                            this._setMinute(val);
+                            self._setMinute(val);
                         }
-                        this._closeTimeScrolls();
-                    }.bind(this));
-                }.call(this, i, opt));
+                        self._closeTimeScrolls();
+                    };
+                })(i));
                 scroll.appendChild(opt);
             }
         },
@@ -628,29 +667,7 @@
         },
 
         _positionCalendar: function () {
-            var panel = this._calendarPanel;
-            var rect = this._wrapper.getBoundingClientRect();
-            var calHeight = 300;
-            var spaceBelow = window.innerHeight - rect.bottom;
-            var spaceAbove = rect.top;
-
-            panel.classList.remove('dtp-calendar-panel--fixed');
-
-            if (spaceBelow < calHeight + 10 && spaceAbove > calHeight + 10) {
-                panel.style.top = 'auto';
-                panel.style.bottom = (rect.height + 4) + 'px';
-            } else if (spaceBelow < calHeight + 10 && spaceAbove <= calHeight + 10) {
-                panel.classList.add('dtp-calendar-panel--fixed');
-                panel.style.top = '50%';
-                panel.style.left = '50%';
-                panel.style.transform = 'translate(-50%, -50%)';
-                panel.style.bottom = 'auto';
-            } else {
-                panel.style.top = '100%';
-                panel.style.bottom = 'auto';
-                panel.style.transform = '';
-                panel.style.left = '';
-            }
+            this._smartPosition(this._calendarPanel, 300, 'dtp-calendar-panel--fixed');
         },
 
         _renderCalendar: function () {
@@ -779,6 +796,11 @@
                     dayCell.classList.add('dtp-day-cell--selected');
                 }
 
+                var checkDate = new Date(this._calendarYear, this._calendarMonth, day);
+                if (!self._isDateInRange(checkDate)) {
+                    dayCell.classList.add('dtp-day-cell--disabled');
+                }
+
                 (function (d) {
                     dayCell.addEventListener('click', function (e) {
                         e.stopPropagation();
@@ -856,6 +878,8 @@
 
         _selectDay: function (day) {
             if (!this._tempDate) return;
+            var checkDate = new Date(this._calendarYear, this._calendarMonth, day);
+            if (!this._isDateInRange(checkDate)) return;
             this._tempDate.setFullYear(this._calendarYear);
             this._tempDate.setMonth(this._calendarMonth);
             this._tempDate.setDate(day);
@@ -961,7 +985,7 @@
     };
 
     /* ========== 静态方法 ========== */
-    DateTimePicker.version = '1.2.0';
+    DateTimePicker.version = '1.3.0';
 
     DateTimePicker.initAll = function (options) {
         var inputs = document.querySelectorAll('input[type="datetime-local"]');
@@ -986,22 +1010,13 @@
 
     /* ========== 国际化静态方法 ========== */
 
-    /**
-     * 获取默认 locale 配置（中文）
-     * @returns {object} DEFAULT_LOCALE 的浅拷贝
-     */
     DateTimePicker.getDefaultLocale = function () {
         return extend({}, DEFAULT_LOCALE);
     };
 
-    /**
-     * 批量设置默认 locale（影响后续创建的所有实例）
-     * @param {object} localeOverride 要覆盖的字段
-     */
     DateTimePicker.setDefaultLocale = function (localeOverride) {
         if (localeOverride) {
             extend(DEFAULT_LOCALE, localeOverride);
-            // 同步更新 DEFAULT_OPTIONS 中的 placeholder
             if (localeOverride.placeholder) {
                 DEFAULT_OPTIONS.placeholder = localeOverride.placeholder;
             }

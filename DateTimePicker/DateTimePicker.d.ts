@@ -1,5 +1,5 @@
 /*! ==============================================
-   DateTimePicker v1.2.0
+   DateTimePicker v1.3.0
    TypeScript 类型定义
    ============================================== */
 
@@ -78,7 +78,7 @@ declare class DateTimePicker {
 
 declare interface DateTimePickerOptions {
     /**
-     * 显示格式，支持 token: YYYY MM DD HH mm
+     * 显示格式，支持 token: YYYY MM DD HH mm ss
      * @default 'YYYY-MM-DD HH:mm'
      */
     format?: string;
@@ -100,6 +100,22 @@ declare interface DateTimePickerOptions {
      * @default 1003
      */
     zIndex?: number;
+
+    /**
+     * 是否禁用
+     * @default false
+     */
+    disabled?: boolean;
+
+    /**
+     * 最小可选日期
+     */
+    minDate?: string | Date | number;
+
+    /**
+     * 最大可选日期
+     */
+    maxDate?: string | Date | number;
 
     /**
      * 值变更回调
